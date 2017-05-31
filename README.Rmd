@@ -50,8 +50,8 @@ library(ggplot2)
 library("dplyr")
 
 policeS_clean<-select(policeS,1:7,-2,-3,-5)
-Crimeall$發生地點 <-substr(Crimeall$發生地點, start=1,stop=6)
-policeS_clean$地址 <- substr(policeS_clean$地址, start=1,stop=6)
+Crimeall$發生地點 <-substr(Crimeall$發生地點, start=1,stop=3)
+policeS_clean$地址 <- substr(policeS_clean$地址, start=1,stop=3)
 policeS_clean$地址 <-gsub("臺北市","台北市",policeS_clean$地址)
 
 policeF<-group_by(policeS_clean,地址)%>%
