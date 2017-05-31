@@ -204,16 +204,9 @@ P_C_F<-inner_join(policeF,CrimeF,by=c("地址"="發生地點"))
 
 ``` r
 library(ggmap)
-twmap <- get_map(location = 'Taiwan', 
-                 zoom = 8,
-                 language = "zh-TW")
-```
 
-    ## Map from URL : http://maps.googleapis.com/maps/api/staticmap?center=Taiwan&zoom=8&size=640x640&scale=2&maptype=terrain&language=zh-TW&sensor=false
 
-    ## Information from URL : http://maps.googleapis.com/maps/api/geocode/json?address=Taiwan&sensor=false
 
-``` r
 TWD97TM2toWGS84 <- function (input_lat, input_lon){  
   # input_lat: TWD97橫座標, 南北緯度, latitude N
   # input_lon: TWD97縱座標, 東西經度, longitude E
@@ -274,12 +267,31 @@ TWD97TM2toWGS84 <- function (input_lat, input_lon){
   return(WGS)
 }
 song<-TWD97TM2toWGS84(policeS_clean$POINT_X,policeS_clean$POINT_Y)
+
 policeS_clean$POINT_X<-song$lat
 policeS_clean$POINT_Y<-song$lon
-policeS_twmap <- ggmap(twmap) +geom_point(data=policeS_clean, 
-               aes(x=policeS_clean$POINT_X, y=policeS_clean$POINT_Y,
-                   color="red",size=3.5))+ guides(size=FALSE)
 
+twmap <- get_map(location = 'Taiwan', 
+                 zoom = 8,
+                 language = "zh-TW",maptype = 'roadmap')
+```
+
+    ## Map from URL : http://maps.googleapis.com/maps/api/staticmap?center=Taiwan&zoom=8&size=640x640&scale=2&maptype=roadmap&language=zh-TW&sensor=false
+
+    ## Information from URL : http://maps.googleapis.com/maps/api/geocode/json?address=Taiwan&sensor=false
+
+``` r
+policeS_twmap <- ggmap(twmap) +geom_point(data=policeS_clean, 
+               aes(x=as.numeric(POINT_Y), y=as.numeric(POINT_X),color="red",size=0.5))+ guides(size=FALSE)
+
+policeS_twmap
+```
+
+    ## Warning: Removed 26 rows containing missing values (geom_point).
+
+![](README_files/figure-markdown_github/unnamed-chunk-3-1.png)
+
+``` r
 knitr::kable(P_C_F)
 ```
 
@@ -2005,14 +2017,6 @@ knitr::kable(policeS_clean)
 | 東莒派出所         | 連江縣 |  25.95974|  119.9710|
 | 東引警察所         | 連江縣 |  26.36769|  120.4897|
 | 西區派出所         | 連江縣 |  26.15933|  119.9195|
-
-``` r
-policeS_twmap
-```
-
-    ## Warning: Removed 1694 rows containing missing values (geom_point).
-
-![](README_files/figure-markdown_github/unnamed-chunk-3-1.png)
 
 期末專題分析規劃
 ----------------

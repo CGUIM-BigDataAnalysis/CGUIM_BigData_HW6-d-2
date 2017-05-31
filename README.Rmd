@@ -67,9 +67,7 @@ P_C_F<-inner_join(policeF,CrimeF,by=c("地址"="發生地點"))
 圖文並茂圖文並茂
 ```{r}
 library(ggmap)
-twmap <- get_map(location = 'Taiwan', 
-                 zoom = 8,
-                 language = "zh-TW")
+
 
 
 TWD97TM2toWGS84 <- function (input_lat, input_lon){  
@@ -132,16 +130,20 @@ TWD97TM2toWGS84 <- function (input_lat, input_lon){
   return(WGS)
 }
 song<-TWD97TM2toWGS84(policeS_clean$POINT_X,policeS_clean$POINT_Y)
+
 policeS_clean$POINT_X<-song$lat
 policeS_clean$POINT_Y<-song$lon
-policeS_twmap <- ggmap(twmap) +geom_point(data=policeS_clean, 
-               aes(x=policeS_clean$POINT_X, y=policeS_clean$POINT_Y,
-                   color="red",size=3.5))+ guides(size=FALSE)
 
-knitr::kable(P_C_F)
-knitr::kable(policeS_clean)
+twmap <- get_map(location = 'Taiwan', 
+                 zoom = 8,
+                 language = "zh-TW",maptype = 'roadmap')
+
+policeS_twmap <- ggmap(twmap) +geom_point(data=policeS_clean, 
+               aes(x=as.numeric(POINT_Y), y=as.numeric(POINT_X),color="red",size=0.5))+ guides(size=FALSE)
 
 policeS_twmap
+knitr::kable(P_C_F)
+knitr::kable(policeS_clean)
 ```
 
 ## 期末專題分析規劃
