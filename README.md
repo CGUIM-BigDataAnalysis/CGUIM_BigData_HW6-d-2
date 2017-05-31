@@ -158,7 +158,43 @@ X10510_10512犯罪資料 <- read_csv("~/Downloads/10510-10512犯罪資料.csv")
 將近兩年的犯罪資料以地區做合併 再以犯罪資料的發生地區和派出所清理後的地址做合併
 
 ``` r
-#這是R Code Chunk
+Crimeall<-rbind(X10401_10403犯罪資料,X10404_10406犯罪資料[,1:3],X10407_10409犯罪資料[,1:3],X10410_10412犯罪資料[,1:3],X10501_10503犯罪資料[,1:3],X10504_10506犯罪資料[,1:3],X10507_10509犯罪資料[,1:3],X10510_10512犯罪資料[,1:3])
+library(ggmap)
+```
+
+    ## Loading required package: ggplot2
+
+    ## Warning: package 'ggplot2' was built under R version 3.2.5
+
+``` r
+library(ggplot2)
+library("dplyr")
+```
+
+    ## Warning: package 'dplyr' was built under R version 3.2.5
+
+    ## 
+    ## Attaching package: 'dplyr'
+
+    ## The following objects are masked from 'package:stats':
+    ## 
+    ##     filter, lag
+
+    ## The following objects are masked from 'package:base':
+    ## 
+    ##     intersect, setdiff, setequal, union
+
+``` r
+policeS_clean<-select(policeS,1:7,-2,-3,-5)
+Crimeall$發生地點 <-substr(Crimeall$發生地點, start=1,stop=6)
+policeS_clean$地址 <- substr(policeS_clean$地址, start=1,stop=6)
+policeS_clean$地址 <-gsub("臺北市","台北市",policeS_clean$地址)
+
+policeF<-group_by(policeS_clean,地址)%>%
+  summarise(警察局數量=n())
+CrimeF<-group_by(Crimeall,發生地點)%>%
+    summarise(案件數量=n())
+P_C_F<-inner_join(policeF,CrimeF,by=c("地址"="發生地點"))
 ```
 
 探索式資料分析
@@ -167,8 +203,96 @@ X10510_10512犯罪資料 <- read_csv("~/Downloads/10510-10512犯罪資料.csv")
 圖文並茂圖文並茂
 
 ``` r
-#這是R Code Chunk
+library(ggmap)
+twmap <- get_map(location = 'Taiwan', 
+                 zoom = 8,
+                 language = "zh-TW")
 ```
+
+    ## Map from URL : http://maps.googleapis.com/maps/api/staticmap?center=Taiwan&zoom=8&size=640x640&scale=2&maptype=terrain&language=zh-TW&sensor=false
+
+    ## Information from URL : http://maps.googleapis.com/maps/api/geocode/json?address=Taiwan&sensor=false
+
+``` r
+ggmap(twmap)
+```
+
+![](README_files/figure-markdown_github/unnamed-chunk-3-1.png)
+
+``` r
+policeS_clean$POINT_X<-as.numeric(policeS_clean$POINT_X )
+policeS_clean$POINT_Y<-as.numeric(policeS_clean$POINT_Y) 
+
+TWD97TM2toWGS84 <- function (input_lat, input_lon){  
+  # input_lat: TWD97橫座標, 南北緯度, latitude N
+  # input_lon: TWD97縱座標, 東西經度, longitude E
+  
+  input_lat <- input_lat %>% as.character %>% as.numeric()
+  input_lon <- input_lon %>% as.character %>% as.numeric()
+  
+  a = 6378137.0
+  b = 6356752.314245
+  lon0 = 121 * pi / 180
+  k0 = 0.9999
+  dx = 250000
+  dy = 0
+  e = (1 - b^2 / a^2)^0.5
+  
+  
+  x =  input_lat - dx # input_lat: TWD97橫座標, 緯度, latitude
+  y =  input_lon - dy # input_lon: TWD97縱座標, 經度, longitude
+  
+  M = y/k0
+  
+  mu = M/(a*(1.0 - ( e**2 )/4.0 - 3* (e**4)/64.0 - 5* (e**6)/256.0))
+  e1 = (1.0 -  ((1.0 -  (e**2))**0.5)) / (1.0 +  ((1.0 -  (e**2))**0.5))
+  
+  J1 = (3*e1/2 - 27* (e1**3)/32.0)
+  J2 = (21* (e1**2)/16 - 55* (e1**4)/32.0)
+  J3 = (151* (e1**3)/96.0)
+  J4 = (1097* (e1**4)/512.0)
+  
+  fp = mu + J1*sin(2*mu) + J2*sin(4*mu) + J3*sin(6*mu) + J4*sin(8*mu)
+  
+  e2 =  ((e*a/b)**2)
+  C1 =  (e2*cos(fp)**2)
+  T1 =  (tan(fp)**2)
+  R1 = a*(1- (e**2))/ ((1- (e**2)* (sin(fp)**2))**(3.0/2.0))
+  N1 = a/ ((1- (e**2)* (sin(fp)**2))**0.5)
+  
+  D = x/(N1*k0)
+  
+  #緯度計算 latitude
+  Q1 = N1*tan(fp)/R1
+  Q2 = ( (D**2)/2.0)
+  Q3 = (5 + 3*T1 + 10*C1 - 4* (C1**2) - 9*e2)* (D**4)/24.0
+  Q4 = (61 + 90*T1 + 298*C1 + 45* (T1**2) - 3* (C1**2) - 252*e2)* (D**6)/720.0
+  lat = fp - Q1*(Q2 - Q3 + Q4)
+  
+  #經度計算 longitude
+  Q5 = D
+  Q6 = (1 + 2*T1 + C1)* (D**3)/6
+  Q7 = (5 - 2*C1 + 28*T1 - 3* (C1**2) + 8*e2 + 24* (T1**2))* (D**5)/120.0
+  lon = lon0 + (Q5 - Q6 + Q7)/cos(fp)
+  
+  
+  lat = (lat*180) /pi #南北緯度  latitude 
+  lon = (lon*180)/ pi #東西經度  longitude
+
+  WGS = list(lat = lat, lon = lon)
+  return(WGS)
+}
+song<-TWD97TM2toWGS84(policeS_clean$POINT_X,policeS_clean$POINT_Y)
+
+policeS_twmap <- ggmap(twmap) +geom_point(data=policeS_clean, 
+               aes(x=policeS_clean$POINT_X, y=policeS_clean$POINT_Y,
+                   color="red",size=3.5))+ guides(size=FALSE)
+policeS_twmap
+```
+
+    ## Warning: Removed 1694 rows containing missing values (geom_point).
+
+![](README_files/figure-markdown_github/unnamed-chunk-3-2.png)
 
 期末專題分析規劃
 ----------------
