@@ -29,7 +29,7 @@ library(readr)
     ## Warning: package 'readr' was built under R version 3.2.5
 
 ``` r
-policeS <- read_csv("~/Downloads/mapdata201705260605/policeS.csv")
+policeS <- read_csv("~/Downloads/policeS.csv")
 ```
 
     ## Parsed with column specification:

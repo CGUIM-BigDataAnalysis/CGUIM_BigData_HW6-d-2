@@ -27,7 +27,7 @@ B0444228林鈺潔
 
 ```{r}
 library(readr)
-policeS <- read_csv("~/Downloads/mapdata201705260605/policeS.csv")
+policeS <- read_csv("~/Downloads/policeS.csv")
 X10401_10403犯罪資料 <- read_csv("~/Downloads/10401-10403犯罪資料.csv") 
 X10404_10406犯罪資料 <- read_csv("~/Downloads/10404-10406犯罪資料.csv") 
 X10407_10409犯罪資料 <- read_csv("~/Downloads/10407-10409犯罪資料.csv") 
