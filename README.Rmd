@@ -18,6 +18,9 @@ B0444228林鈺潔
 ```{r}
 library(readr)
 policeS <- read_csv("~/Downloads/policeS.csv")
+library(readxl)
+m1 <- read_csv("~/Downloads/opendata105N010.csv", skip = 1)
+台灣人口 <- read_excel("~/Downloads/台灣人口.xlsx")
 X10401_10403犯罪資料 <- read_csv("~/Downloads/10401-10403犯罪資料.csv") 
 X10404_10406犯罪資料 <- read_csv("~/Downloads/10404-10406犯罪資料.csv") 
 X10407_10409犯罪資料 <- read_csv("~/Downloads/10407-10409犯罪資料.csv") 
@@ -37,28 +40,97 @@ X10510_10512犯罪資料 <- read_csv("~/Downloads/10510-10512犯罪資料.csv")
 Crimeall<-rbind(X10401_10403犯罪資料,X10404_10406犯罪資料[,1:3],X10407_10409犯罪資料[,1:3],X10410_10412犯罪資料[,1:3],X10501_10503犯罪資料[,1:3],X10504_10506犯罪資料[,1:3],X10507_10509犯罪資料[,1:3],X10510_10512犯罪資料[,1:3])
 library(ggmap)
 library(ggplot2)
+library(datasets)
 library("dplyr")
 
 policeS_clean<-select(policeS,1:7,-2,-3,-5)
 Crimeall$發生地點 <-substr(Crimeall$發生地點, start=1,stop=3)
 policeS_clean$地址 <- substr(policeS_clean$地址, start=1,stop=3)
 policeS_clean$地址 <-gsub("臺北市","台北市",policeS_clean$地址)
+policeS_clean$地址 <-gsub("臺南市","台南市",policeS_clean$地址)
+policeS_clean$地址 <-gsub("臺中市","台中市",policeS_clean$地址)
+policeS_clean$地址 <-gsub("臺東縣","台東縣",policeS_clean$地址)
+
+m2<-select(m1,1:4,-1,-3)
+m2$區域別<-substr(m2$區域別,start = 1,stop=3)
+
+m2_F<-group_by(m2[1:368,],區域別)%>%
+  summarise(土地總面積=sum(土地面積))
+m2_F[1,1]<-"Kaohsiung"
+m2_F[2,1]<-"Hualien"
+m2_F[3,1]<-"Keelung"
+m2_F[4,1]<-"ChiayiCity"
+m2_F[5,1]<-"ChiayiCounty"
+m2_F[6,1]<-"Kinmen"
+m2_F[7,1]<-"Lianjiang"
+m2_F[8,1]<-"Miaoli"
+m2_F[9,1]<-"Nantou"
+m2_F[10,1]<-"Penghu"
+m2_F[11,1]<-"Pingtung"
+m2_F[12,1]<-"Taipei"
+m2_F[13,1]<-"Taitung"
+m2_F[14,1]<-"Tainan"
+m2_F[15,1]<-"Taichung"
+m2_F[16,1]<-"Taoyuan"
+m2_F[17,1]<-"NewTaipei"
+m2_F[18,1]<-"HsinchuCity"
+m2_F[19,1]<-"HsinchuCounty"
+m2_F[20,1]<-"Yilan"
+m2_F[21,1]<-"Yunlin"
+m2_F[22,1]<-"Changhua"
+
+colnames(m2_F)<-c("County","place")
+
 
 policeF<-group_by(policeS_clean,地址)%>%
   summarise(警察局數量=n())
 CrimeF<-group_by(Crimeall,發生地點)%>%
     summarise(案件數量=n())
 P_C_F<-inner_join(policeF,CrimeF,by=c("地址"="發生地點"))
+P_C_F$犯罪率<-P_C_F$案件數量/sum(P_C_F$案件數量)
+colnames(P_C_F) <- c("County","NumbersofPoliceStation","NumbersofCriminal","Rate")
+P_C_F[1,1]<-"Kaohsiung"
+P_C_F[2,1]<-"Hualien"
+P_C_F[3,1]<-"Keelung"
+P_C_F[4,1]<-"ChiayiCity"
+P_C_F[5,1]<-"ChiayiCounty"
+P_C_F[6,1]<-"Kinmen"
+P_C_F[7,1]<-"Lianjiang"
+P_C_F[8,1]<-"Miaoli"
+P_C_F[9,1]<-"Nantou"
+P_C_F[10,1]<-"Penghu"
+P_C_F[11,1]<-"Pingtung"
+P_C_F[12,1]<-"Taipei"
+P_C_F[13,1]<-"Taitung"
+P_C_F[14,1]<-"Tainan"
+P_C_F[15,1]<-"Taichung"
+P_C_F[16,1]<-"Taoyuan"
+P_C_F[17,1]<-"NewTaipei"
+P_C_F[18,1]<-"HsinchuCity"
+P_C_F[19,1]<-"HsinchuCounty"
+P_C_F[20,1]<-"Yilan"
+P_C_F[21,1]<-"Yunlin"
+P_C_F[22,1]<-"Changhua"
+colnames(台灣人口)<-c("County","people")
+All1<-inner_join(P_C_F,台灣人口,by="County")
+All2<-inner_join(All1,m2_F,by="County")
+All2$StationDensity<-All2$NumbersofPoliceStation/All2$place
+All2$PeopleDensity<-All2$people/All2$place
+All3<-All2[-12,]
 
+P_C_F_Criminal<-P_C_F[order(P_C_F$NumbersofCriminal,decreasing=T),]
+P_C_F_PoliceStation<-P_C_F[order(P_C_F$NumbersofPoliceStation,decreasing = T),]
+All2_StationDensity<-All2[order(All2$StationDensity,decreasing = T),]
+All2_PeopleDensity<-All2[order(All2$PeopleDensity,decreasing = T),]
 
-```
+ggplot(P_C_F_Criminal, aes(x = County, y = NumbersofCriminal)) + geom_bar(stat = "identity")+coord_flip()
+ggplot(All2_StationDensity, aes(x = County, y = StationDensity)) + geom_bar(stat = "identity")+coord_flip()
+ggplot(All2_PeopleDensity, aes(x = County, y = PeopleDensity)) + geom_bar(stat = "identity")+coord_flip()
+ggplot(All2, aes(x = County, y = people)) + geom_bar(stat = "identity")+coord_flip()
+ggplot(All2, aes(x = County, y =NumbersofPoliceStation )) + geom_bar(stat = "identity")+coord_flip()
 
 ## 探索式資料分析
-圖文並茂圖文並茂
 ```{r}
-library(ggmap)
-
-
 
 TWD97TM2toWGS84 <- function (input_lat, input_lon){  
   # input_lat: TWD97橫座標, 南北緯度, latitude N
@@ -124,20 +196,60 @@ song<-TWD97TM2toWGS84(policeS_clean$POINT_X,policeS_clean$POINT_Y)
 policeS_clean$POINT_X<-song$lat
 policeS_clean$POINT_Y<-song$lon
 
-twmap <- get_map(location = 'Taiwan', 
-                 zoom = 8,
+tymap <- get_map(location = 'NewTaipei', 
+                 zoom = 13,
                  language = "zh-TW",maptype = 'roadmap')
+policeS_tymap <- ggmap(tymap) +geom_point(data=policeS_clean, 
+               aes(x=as.numeric(POINT_Y), y=as.numeric(POINT_X),color="red",size=0.5))+ guides(size=FALSE)
+policeS_tymap
 
-policeS_twmap <- ggmap(twmap) +geom_point(data=policeS_clean, 
-               aes(x=as.numeric(POINT_Y), y=as.numeric(POINT_X),color="red",size=1))+ guides(size=FALSE)
+ggplot(All2,
+       aes(x=PeopleDensity,
+           y=NumbersofPoliceStation))+
+  geom_point()+
+  geom_smooth(method = "glm")
 
-#台灣警察局分佈圖 ZOOMSIZE還需調整
-policeS_twmap
+ggplot(All2,
+       aes(x=people,
+           y=NumbersofPoliceStation))+
+  geom_point()+
+  geom_smooth(method = "glm")
+
+ggplot(All2,
+       aes(x=NumbersofCriminal,
+           y=NumbersofPoliceStation))+
+  geom_point()+
+  geom_smooth(method = "glm")
+
+ggplot(All2,
+       aes(x=NumbersofCriminal,
+           y=NumbersofPoliceStation))+
+  geom_point()+
+  geom_smooth(method = "glm")
+
+ggplot(All2,
+       aes(x=StationDensity,
+           y=NumbersofCriminal))+
+  geom_point()+
+  geom_smooth(method = "glm")
+
+
+ggplot(All2,
+       aes(x=PeopleDensity,
+           y=NumbersofCriminal))+
+  geom_point()+
+  geom_smooth(method = "glm")
+
+ggplot(All3,
+       aes(x=PeopleDensity,
+           y=NumbersofCriminal))+
+  geom_point()+
+  geom_smooth(method = "glm")
+
 #台灣各地區案件數量和警察局數量
 knitr::kable(P_C_F)
 #台灣警察局經緯度
 knitr::kable(policeS_clean)
-
 ```
 
 ## 期末專題分析規劃
